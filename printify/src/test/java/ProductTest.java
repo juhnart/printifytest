@@ -12,7 +12,7 @@ import java.util.Random;
 
 import static io.restassured.RestAssured.*;
 
-@org.testng.annotations.Test(threadPoolSize = 3, invocationCount = 5,  timeOut = 10000)
+@org.testng.annotations.Test(threadPoolSize = 3, invocationCount = 3,  timeOut = 10000)
 public class ProductTest {
 
     private String authToken = Constants.authToken;
@@ -26,6 +26,13 @@ public class ProductTest {
     private ResponseSpecification responseSpec = new ResponseSpecBuilder()
             .expectStatusCode(200)
             .build();
+
+    /** Create new product
+     *
+     * Execute POST to create new product
+     * Get all products and verify that newly crated product present in the list
+     *
+     */
 
     @Test
     public void testCreateProduct() {
@@ -48,6 +55,14 @@ public class ProductTest {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Product not created"));
     }
+
+    /** Update product
+     *
+     * Execute POST to create new product
+     * Using ID of created product, execute POST to update product description
+     * Get updated product by ID and verify that it's new description present
+     *
+     */
 
     @Test
     public void testUpdateProduct() {
@@ -82,8 +97,16 @@ public class ProductTest {
                 .spec(responseSpec)
                 .contentType(ContentType.JSON)
                 .extract().body().jsonPath().get("description");
-        Assert.assertTrue(description.equals(updatedProductName));
+        Assert.assertTrue("Product not updated", description.equals(updatedProductName));
     }
+
+    /** Delete product
+     *
+     * Execute POST to create new product
+     * Using ID of created product, execute DELETE to remove product
+     * Get all products and verify that deleted product not present in the list
+     *
+     */
 
     @Test
     public void testDeleteProduct() {
@@ -112,7 +135,7 @@ public class ProductTest {
                 .spec(responseSpec)
                 .contentType(ContentType.JSON)
                 .extract().body().jsonPath().getList("data.id");
-        Assert.assertFalse(descriptions.contains(productId));
+        Assert.assertFalse("Product not deleted", descriptions.contains(productId));
     }
 
     private String getShopId() {
@@ -142,7 +165,7 @@ public class ProductTest {
                 .then()
                 .spec(responseSpec)
                 .contentType(ContentType.JSON)
-                .extract().jsonPath().getList("id").get(0).toString();
+                .extract().jsonPath().get("id");
         nameAndId.add(id);
         return nameAndId;
     }
