@@ -6,6 +6,7 @@ import io.restassured.specification.ResponseSpecification;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -28,21 +29,8 @@ public class ProductTest {
 
     @Test
     public void testCreateProduct() {
-
-        Random rand = new Random();
-        final String productName = "TestProduct"+ rand.nextInt();
-
         //create new product
-        given()
-                .spec(requestSpec)
-                .pathParams("id", getShopId())
-                .when()
-                .log().all()
-                .body(String.format(Constants.newProductBody, productName))
-                .post(Constants.products)
-                .then()
-                .spec(responseSpec)
-                .contentType(ContentType.JSON);
+        String productName = createNewProduct().get(0);
 
         //assert that product created
         final List<String> descriptions = given()
@@ -63,17 +51,21 @@ public class ProductTest {
 
     @Test
     public void testUpdateProduct() {
+        //create new product
+        List<String> nameAndId = createNewProduct();
+        String productId = nameAndId.get(1);
 
+        //generate new product name
         Random rand = new Random();
-        String productName = "TestProduct"+ rand.nextInt();
+        final String updatedProductName = "TestProduct2"+rand.nextInt();
 
         //update product
         given()
                 .spec(requestSpec)
                 .pathParams("shop_id", getShopId())
-                .pathParams("product_id", getProductId())
+                .pathParams("product_id", productId)
                 .when()
-                .body(String.format(Constants.updateProductBody, productName))
+                .body(String.format(Constants.updateProductBody, updatedProductName))
                 .put(Constants.product)
                 .then()
                 .spec(responseSpec)
@@ -83,21 +75,21 @@ public class ProductTest {
         String description = given()
                 .spec(requestSpec)
                 .pathParams("shop_id", getShopId())
-                .pathParams("product_id", getProductId())
+                .pathParams("product_id", productId)
                 .when()
                 .get(Constants.product)
                 .then()
                 .spec(responseSpec)
                 .contentType(ContentType.JSON)
                 .extract().body().jsonPath().get("description");
-        Assert.assertTrue(description.equals(productName));
-
+        Assert.assertTrue(description.equals(updatedProductName));
     }
 
     @Test
     public void testDeleteProduct() {
-
-        String productId = getProductId();
+        //create new product
+        List<String> nameAndId = createNewProduct();
+        String productId = nameAndId.get(1);
 
         //delete product
         given()
@@ -135,32 +127,24 @@ public class ProductTest {
                 .extract().jsonPath().getList("id").get(0).toString();
     }
 
-    private String getProductId() {
-        List<String> products = given()
+    private List<String> createNewProduct() {
+        List<String> nameAndId = new ArrayList<>();
+        Random rand = new Random();
+        final String productName = "TestProduct" +rand.nextInt();
+        nameAndId.add(productName);
+        String id = given()
                 .spec(requestSpec)
                 .pathParams("id", getShopId())
                 .when()
-                .get(Constants.products)
+                .log().all()
+                .body(String.format(Constants.newProductBody, productName))
+                .post(Constants.products)
                 .then()
                 .spec(responseSpec)
                 .contentType(ContentType.JSON)
-                .extract().jsonPath().getList("data.id");
-        if (products.size() == 0) {
-            Random rand = new Random();
-            String productName = "TestProduct"+ rand.nextInt();
-
-            //create new product
-            return given()
-                    .spec(requestSpec)
-                    .pathParams("id", getShopId())
-                    .when()
-                    .body(String.format(Constants.newProductBody, productName))
-                    .post(Constants.products)
-                    .then()
-                    .spec(responseSpec)
-                    .contentType(ContentType.JSON)
-                    .extract().jsonPath().getList("id").get(0).toString();
-        } else return products.get(0);
+                .extract().jsonPath().getList("id").get(0).toString();
+        nameAndId.add(id);
+        return nameAndId;
     }
 
 }
